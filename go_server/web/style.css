@@ -35,20 +35,6 @@ h1, h2, h3, p { margin: 0; }
   box-shadow: var(--shadow);
 }
 
-.eyebrow {
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  font-size: 13px;
-  margin-bottom: 6px;
-}
-
-.lede {
-  color: var(--muted);
-  max-width: 720px;
-  line-height: 1.4;
-}
-
 .webhook-line {
   color: var(--text);
   margin-top: 8px;
@@ -65,31 +51,28 @@ h1, h2, h3, p { margin: 0; }
 
 .offline { background: rgba(94, 224, 163, 0.14); color: var(--accent); }
 
-.stat-bar {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
-  margin: 26px 0;
+.metrics {
+  display: flex;
+  gap: 12px;
 }
 
-.stat-card {
-  padding: 16px 18px;
-  background: var(--panel);
-  border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: var(--shadow);
+.metric {
+  background: rgba(255,255,255,0.06);
+  padding: 10px 12px;
+  border-radius: 10px;
+  min-width: 100px;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
-.label {
+.metric span {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 12px;
 }
 
-.value {
-  margin-top: 6px;
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+.metric strong {
+  display: block;
+  font-size: 20px;
+  margin-top: 4px;
 }
 
 .value.small {
@@ -117,6 +100,8 @@ h1, h2, h3, p { margin: 0; }
   align-items: center;
   gap: 10px;
 }
+
+.hidden { display: none; }
 
 button.ghost {
   background: transparent;

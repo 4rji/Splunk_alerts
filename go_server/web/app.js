@@ -3,8 +3,9 @@ const emptyEl = document.getElementById("empty");
 const countEl = document.getElementById("stat-count");
 const lastEl = document.getElementById("stat-last");
 const urlEl = document.getElementById("stat-url");
-const refreshBtn = document.getElementById("refresh");
 const autoToggle = document.getElementById("auto");
+const loadHistoryBtn = document.getElementById("load-history");
+const clearViewBtn = document.getElementById("clear-view");
 
 let openIds = new Set();
 let alertsMap = new Map(); // id -> alert
@@ -66,7 +67,7 @@ function resetList(alerts) {
 function appendNew(alerts) {
   const newOnes = alerts.filter((a) => !alertsMap.has(a.id));
   for (let i = newOnes.length - 1; i >= 0; i -= 1) {
-    const a = newOnes[i]; // oldest new first so newest stays arriba
+    const a = newOnes[i]; // oldest new first so newest stays on top
     alertsMap.set(a.id, a);
     const card = buildCard(a);
     listEl.prepend(card);
@@ -106,8 +107,29 @@ function setAuto(on) {
   }
 }
 
-refreshBtn.addEventListener("click", () => loadAlerts({ forceReset: false }));
 autoToggle.addEventListener("change", (e) => setAuto(e.target.checked));
+loadHistoryBtn.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/history/reload", { method: "POST" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    await loadAlerts({ forceReset: true });
+  } catch (err) {
+    console.error("Failed to reload history:", err);
+  }
+});
+clearViewBtn.addEventListener("click", () => {
+  if (timerId) {
+    clearInterval(timerId);
+    timerId = null;
+    autoToggle.checked = false;
+  }
+  alertsMap.clear();
+  listEl.innerHTML = "";
+  openIds.clear();
+  countEl.textContent = "0";
+  lastEl.textContent = "–";
+  emptyEl.style.display = "block";
+});
 
 initURL();
 loadAlerts({ forceReset: true });

@@ -9,26 +9,24 @@
 <body>
   <header class="page-header">
     <div>
-      <p class="eyebrow">Local webhook</p>
       <h1>Splunk Alerts</h1>
       <p class="webhook-line">Webhook URL: <code id="stat-url-top">http://127.0.0.1:5123/webhook</code></p>
+    </div>
+    <div class="metrics">
+      <div class="metric">
+        <span>Alerts</span>
+        <strong id="stat-count">0</strong>
+      </div>
+      <div class="metric">
+        <span>Last</span>
+        <strong id="stat-last">–</strong>
+      </div>
     </div>
   </header>
 
   <main>
-    <section class="stat-bar">
-      <div class="stat-card">
-        <p class="label">Alerts received</p>
-        <p class="value" id="stat-count">0</p>
-      </div>
-      <div class="stat-card">
-        <p class="label">Last alert</p>
-        <p class="value" id="stat-last">–</p>
-      </div>
-      <div class="stat-card">
-        <p class="label">Webhook URL</p>
-        <p class="value small" id="stat-url">http://127.0.0.1:5123/webhook</p>
-      </div>
+    <section class="hidden">
+      <p class="value small" id="stat-url">http://127.0.0.1:5123/webhook</p>
     </section>
 
     <section class="alerts-section">
@@ -40,7 +38,8 @@
             <span class="slider"></span>
             <span class="label">Auto</span>
           </label>
-          <button id="refresh" class="ghost">Refresh</button>
+          <button id="load-history" class="ghost">Load history</button>
+          <button id="clear-view" class="ghost">Clear view</button>
         </div>
       </div>
       <ul id="alert-list" class="alerts-grid"></ul>

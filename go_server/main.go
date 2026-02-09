@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,6 +36,7 @@ var (
 	alertsMu sync.Mutex
 	nextID   = 1
 	maxStore = 500 // keep a rolling window to avoid unbounded memory growth
+	dataFile = filepath.Join(".", "alerts_history.json")
 )
 
 //go:embed web
@@ -42,6 +44,10 @@ var embedded embed.FS
 
 func main() {
 	addr := resolveAddr()
+
+	if err := loadHistory(); err != nil {
+		log.Printf("warning: could not load history: %v", err)
+	}
 
 	webFS, err := fs.Sub(embedded, "web")
 	if err != nil {
@@ -53,6 +59,7 @@ func main() {
 	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.FS(webFS))))
 	mux.HandleFunc("/api/alerts", getAlerts)
 	mux.HandleFunc("/webhook", webhookHandler)
+	mux.HandleFunc("/api/history/reload", reloadHistory)
 
 	log.Printf("Splunk webhook receiver listening on %s", addr)
 	log.Printf("POST Splunk alerts to http://<ip>%s/webhook", addr)
@@ -141,6 +148,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	alert.ID = nextID
 	nextID++
 	alerts = append(alerts, alert)
+	_ = saveHistoryLocked()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -152,6 +160,22 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		resp["parse_error"] = err.Error()
 	}
 	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func reloadHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if err := loadHistory(); err != nil {
+		http.Error(w, "failed to reload: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "reloaded",
+		"count":  len(alerts),
+	})
 }
 
 func decodePayload(r *http.Request) (rawBody []byte, payload map[string]interface{}, rawJSON []byte, err error) {
@@ -210,6 +234,47 @@ func extractAlert(payload map[string]interface{}, raw []byte) Alert {
 		ReceivedAt: time.Now().UTC(),
 		Raw:        json.RawMessage(raw),
 	}
+}
+
+type snapshot struct {
+	Alerts []Alert `json:"alerts"`
+	NextID int     `json:"next_id"`
+}
+
+func loadHistory() error {
+	alertsMu.Lock()
+	defer alertsMu.Unlock()
+
+	data, err := os.ReadFile(dataFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	var snap snapshot
+	if err := json.Unmarshal(data, &snap); err != nil {
+		return err
+	}
+	alerts = snap.Alerts
+	if snap.NextID > 0 {
+		nextID = snap.NextID
+	} else {
+		nextID = len(alerts) + 1
+	}
+	return nil
+}
+
+func saveHistoryLocked() error {
+	snap := snapshot{
+		Alerts: alerts,
+		NextID: nextID,
+	}
+	data, err := json.MarshalIndent(snap, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dataFile, data, 0644)
 }
 
 func extractResult(payload map[string]interface{}) map[string]interface{} {
