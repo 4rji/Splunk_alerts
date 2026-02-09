@@ -68,3 +68,21 @@ Now, open your browser and navigate to `http://localhost:5000` to see your live 
 Remember to enable **Throttling** in the Splunk alert settings to prevent the Red Team from flooding your dashboard with thousands of messages during a brute-force attack!
 
 ---
+
+## ⚙️ Configuring Alert Throttling
+
+### Suppress results containing field value
+
+Enter `src_ip`.
+
+**Why?** This tells Splunk: "If I get 500 failures from the same IP address, only send me one alert. But if a different IP address starts attacking, send me a new alert immediately."
+
+### Suppress triggering for
+
+Enter `60` and select **second(s)** (or `300` seconds / 5 minutes).
+
+**Why?** This is your "cool-down" period. Once an alert triggers for a specific IP, Splunk will wait this long before notifying you about that same IP again.
+
+![Throttle Configuration](throttle.webp)
+
+---
