@@ -15,11 +15,14 @@ index=linux "sshd-session" "failed" OR "invalid"
 ```
 
 ### Step 2: Save as Alert
-![Save as Alert](alerts1.webp)
+
 Once your search is working, save it as an alert to automate the notification process.
 
 1. Click on **Save As** in the top-right corner.
 2. Select **Alert**.
+
+![Save as Alert](alerts1.webp)
+
 
 ### Step 3: Configure Webhook Action
 
@@ -28,6 +31,8 @@ In the Alert settings, you must tell Splunk to send the data to your dashboard's
 1. Under **Trigger Actions**, click **Add Action**.
 2. Select **Webhook**.
 3. Enter your dashboard URL: `http://<YOUR_IP>:5000/webhook`
+![Save as Alert](alerts2.webp)
+
 
 ### Step 4: Launch the Dashboard
 
@@ -43,6 +48,7 @@ python3 website.py
 
 Now, open your browser and navigate to `http://localhost:5000` to see your live attack feed.
 
+![Save as Alert](web.webp)
 ---
 
 ## 🛠️ Requirements
