@@ -6,10 +6,13 @@ const urlEl = document.getElementById("stat-url");
 const autoToggle = document.getElementById("auto");
 const loadHistoryBtn = document.getElementById("load-history");
 const clearViewBtn = document.getElementById("clear-view");
+const saveNewBtn = document.getElementById("save-new");
 
 let openIds = new Set();
 let alertsMap = new Map(); // id -> alert
 let timerId = null;
+let lastSeenId = 0;
+let maxSeenId = 0;
 
 function formatDate(value) {
   const d = new Date(value);
@@ -57,10 +60,14 @@ function buildCard(a) {
 function resetList(alerts) {
   alertsMap.clear();
   listEl.innerHTML = "";
+  lastSeenId = 0;
+  maxSeenId = 0;
   alerts.forEach((a) => {
     alertsMap.set(a.id, a);
     const card = buildCard(a);
     listEl.appendChild(card);
+    if (a.id > maxSeenId) maxSeenId = a.id;
+    if (a.id > lastSeenId) lastSeenId = a.id;
   });
 }
 
@@ -71,27 +78,40 @@ function appendNew(alerts) {
     alertsMap.set(a.id, a);
     const card = buildCard(a);
     listEl.prepend(card);
+    if (a.id > maxSeenId) maxSeenId = a.id;
+    if (a.id > lastSeenId) lastSeenId = a.id;
   }
   return newOnes.length;
 }
 
-async function loadAlerts({ forceReset = false } = {}) {
+async function loadAlerts({ forceReset = false, skipExisting = false } = {}) {
   try {
     const res = await fetch("/api/alerts", { cache: "no-store" });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     const alerts = (data.alerts || []).slice().reverse(); // newest first
 
+    if (skipExisting) {
+      const maxId = alerts.reduce((m, a) => Math.max(m, a.id || 0), 0);
+      lastSeenId = maxId;
+      maxSeenId = maxId;
+      emptyEl.style.display = "block";
+      countEl.textContent = "0";
+      lastEl.textContent = "–";
+      return;
+    }
+
     if (forceReset || alerts.length < alertsMap.size) {
       resetList(alerts);
     } else {
-      appendNew(alerts);
+      const newOnly = alerts.filter((a) => (a.id || 0) > lastSeenId);
+      appendNew(newOnly);
     }
 
     const latest = alerts[0];
-    countEl.textContent = alerts.length;
+    countEl.textContent = alertsMap.size;
     lastEl.textContent = latest ? formatDate(latest.received_at) : "–";
-    emptyEl.style.display = alerts.length ? "none" : "block";
+    emptyEl.style.display = alertsMap.size ? "none" : "block";
   } catch (err) {
     console.error("No se pudieron cargar las alertas:", err);
   }
@@ -118,11 +138,7 @@ loadHistoryBtn.addEventListener("click", async () => {
   }
 });
 clearViewBtn.addEventListener("click", () => {
-  if (timerId) {
-    clearInterval(timerId);
-    timerId = null;
-    autoToggle.checked = false;
-  }
+  lastSeenId = maxSeenId;
   alertsMap.clear();
   listEl.innerHTML = "";
   openIds.clear();
@@ -130,7 +146,27 @@ clearViewBtn.addEventListener("click", () => {
   lastEl.textContent = "–";
   emptyEl.style.display = "block";
 });
+saveNewBtn.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/history/rotate", { method: "POST" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    // After rotation, server cleared its in-memory alerts
+    alertsMap.clear();
+    listEl.innerHTML = "";
+    openIds.clear();
+    lastSeenId = 0;
+    maxSeenId = 0;
+    countEl.textContent = "0";
+    lastEl.textContent = "–";
+    emptyEl.style.display = "block";
+    // keep auto running; skip existing so we only show new ones from now
+    await loadAlerts({ skipExisting: true });
+  } catch (err) {
+    console.error("Failed to rotate history:", err);
+  }
+});
 
 initURL();
-loadAlerts({ forceReset: true });
+// start by skipping existing so auto only shows new arrivals until user loads history
+loadAlerts({ skipExisting: true });
 setAuto(autoToggle.checked);

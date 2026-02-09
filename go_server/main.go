@@ -60,6 +60,7 @@ func main() {
 	mux.HandleFunc("/api/alerts", getAlerts)
 	mux.HandleFunc("/webhook", webhookHandler)
 	mux.HandleFunc("/api/history/reload", reloadHistory)
+	mux.HandleFunc("/api/history/rotate", rotateHistory)
 
 	log.Printf("Splunk webhook receiver listening on %s", addr)
 	log.Printf("POST Splunk alerts to http://<ip>%s/webhook", addr)
@@ -93,6 +94,43 @@ func spaHandler(fsys fs.FS) http.Handler {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write(data)
+	})
+}
+
+func rotateHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	alertsMu.Lock()
+	defer alertsMu.Unlock()
+
+	ts := time.Now().Format("20060102-150405")
+	newFile := filepath.Join(".", "alerts_history_"+ts+".json")
+
+	// Persist current alerts to timestamped file
+	snap := snapshot{Alerts: alerts, NextID: nextID}
+	data, err := json.MarshalIndent(snap, "", "  ")
+	if err != nil {
+		http.Error(w, "failed to rotate: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := os.WriteFile(newFile, data, 0644); err != nil {
+		http.Error(w, "failed to rotate: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Reset in-memory and start new file
+	alerts = nil
+	nextID = 1
+	dataFile = newFile
+	_ = saveHistoryLocked()
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":   "rotated",
+		"filename": filepath.Base(newFile),
 	})
 }
 

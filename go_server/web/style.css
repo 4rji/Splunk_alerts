@@ -98,7 +98,7 @@ h1, h2, h3, p { margin: 0; }
 .controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .hidden { display: none; }
