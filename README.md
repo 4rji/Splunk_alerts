@@ -2,6 +2,8 @@
 
 A lightweight, local SOC dashboard designed for **CCDC (Collegiate Cyber Defense Competition)**. This tool receives Splunk Webhooks and displays security alerts in a clean, filterable web interface, allowing teams to monitor attacks without external internet access.
 
+![Dashboard Interface](dashboard.webp)  
+
 ## 🚀 Setup Guide
 
 ### Step 1: Create the Splunk Search
@@ -13,7 +15,7 @@ index=linux "sshd-session" "failed" OR "invalid"
 ```
 
 ### Step 2: Save as Alert
-
+![Save as Alert](alerts1.webp)
 Once your search is working, save it as an alert to automate the notification process.
 
 1. Click on **Save As** in the top-right corner.
