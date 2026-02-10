@@ -86,3 +86,64 @@ Enter `60` and select **second(s)** (or `300` seconds / 5 minutes).
 ![Throttle Configuration](throttle.webp)
 
 ---
+
+## 🔐 Enabling Kerberos Audit Logs (Windows)
+
+To monitor Kerberos authentication activity on Windows systems, you need to enable auditing for Kerberos events. This allows Splunk to capture authentication attempts and ticket operations.
+
+### Enable Kerberos Logging
+
+Run the following commands in **PowerShell** (as Administrator):
+
+```powershell
+auditpol /set /subcategory:"Kerberos Authentication Service" /success:enable /failure:enable
+auditpol /set /subcategory:"Kerberos Service Ticket Operations" /success:enable /failure:enable
+```
+
+**What this does:**
+- Enables logging for both successful and failed Kerberos authentication attempts
+- Captures Kerberos service ticket operations (TGS requests)
+- Logs are written to the Windows Security Event Log
+
+### Verify Configuration
+
+To confirm that Kerberos auditing is enabled, run:
+
+```powershell
+auditpol /get /subcategory:"Kerberos Authentication Service"
+```
+
+**Expected output:**
+
+```
+Kerberos Authentication Service    Success and Failure
+```
+
+If you see `Success and Failure`, the audit policy is correctly configured and Kerberos events will now be logged.
+
+---
+
+## 🎯 Example: Detecting Kerberos User Enumeration
+
+Once Kerberos logging is enabled, you can create alerts to detect suspicious authentication activity. One common attack technique is **Kerberos user enumeration**, where attackers attempt to discover valid usernames by requesting Kerberos tickets.
+
+### Create the Alert
+
+Use the following Splunk search to detect Kerberos authentication attempts (Event ID 4768):
+
+```splunk
+index=* sourcetype="WinEventLog:Security" EventCode=4768
+```
+
+**What this detects:**
+- **EventCode 4768** = Kerberos Authentication Ticket (TGT) was requested
+- Useful for identifying user enumeration attempts
+- Can reveal brute-force attacks or reconnaissance activity
+
+Follow the same steps outlined in the [Setup Guide](#-setup-guide) to save this as an alert and configure the webhook to your dashboard.
+
+![Kerberos Alert Configuration](kerb_alert.webp)
+
+**Pro Tip:** Combine this with throttling by `Account_Name` to avoid alert spam during legitimate authentication bursts!
+
+---
