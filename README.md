@@ -147,3 +147,11 @@ Follow the same steps outlined in the [Setup Guide](#-setup-guide) to save this 
 **Pro Tip:** Combine this with throttling by `Account_Name` to avoid alert spam during legitimate authentication bursts!
 
 ---
+
+## 📊 Viewing Alerts on the Dashboard
+
+Once your alerts are configured and triggering, you should see them appear in real-time on your web server dashboard. The dashboard will display incoming alerts with relevant details, allowing your team to monitor and respond to security events during the competition.
+
+![Alert Received on Dashboard](result.webp)
+
+---
