@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Splunk Alerts</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <h1>Splunk Alerts</h1>
+      <p class="webhook-line">Webhook URL: <code id="stat-url-top">http://127.0.0.1:5123/webhook</code></p>
+    </div>
+    <div class="metrics">
+      <div class="metric">
+        <span>Alerts</span>
+        <strong id="stat-count">0</strong>
+      </div>
+      <div class="metric">
+        <span>Last</span>
+        <strong id="stat-last">–</strong>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hidden">
+      <p class="value small" id="stat-url">http://127.0.0.1:5123/webhook</p>
+    </section>
+
+    <section class="alerts-section">
+      <div class="section-head">
+        <h2>Incoming alerts</h2>
+        <div class="controls">
+          <label class="toggle">
+            <input type="checkbox" id="auto" checked>
+            <span class="slider"></span>
+            <span class="label">Auto</span>
+          </label>
+          <button id="load-history" class="ghost">Load history</button>
+          <button id="clear-view" class="ghost">Clear view</button>
+          <button id="save-new" class="ghost">Save new</button>
+        </div>
+      </div>
+      <ul id="alert-list" class="alerts-grid"></ul>
+      <div id="empty" class="empty-state">
+        <div class="icon">⚡</div>
+        <p>No alerts yet. Send a POST from Splunk to <code>/webhook</code>.</p>
+        <pre class="snippet">curl -X POST http://localhost:5123/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"search_name":"demo","result":{"host":"srv01","src":"10.10.1.24","source":"firewall"}}'</pre>
+      </div>
+    </section>
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
