@@ -4,6 +4,11 @@ set -euo pipefail
 WEBHOOK="http://10.0.4.220:5123/webhook"
 LOG="/var/log/audit/audit.log"
 
+command -v python3 >/dev/null 2>&1 || {
+  echo "alert_sender: python3 is required to JSON-encode audit.log lines safely" >&2
+  exit 1
+}
+
 # Rutas "normales" (permitidas)
 ALLOW_PREFIX=(/usr/bin/ /bin/ /usr/sbin/ /sbin/ /usr/local/bin/ /usr/local/sbin/)
 # Rutas típicas de dropper / staging (rojas)
@@ -20,7 +25,35 @@ is_bad() {
   return 1
 }
 
-escape_json() { sed 's/\\/\\\\/g; s/"/\\"/g'; }
+make_payload() {
+  # Use Python's JSON encoder so we correctly escape control characters from audit.log
+  # (e.g., 0x1d separators), which otherwise makes the JSON invalid.
+  ALERT="RED_EXEC" \
+    HOST="$(hostname)" \
+    EXE="$1" COMM="$2" UID="$3" EUID="$4" AUID="$5" \
+    PID="$6" PPID="$7" TTY="$8" KEY="$9" AUDIT="${10}" \
+    TEXT="${11}" RAW="${12}" \
+    python3 - <<'PY'
+import os, json
+data = {
+  "alert": os.environ.get("ALERT",""),
+  "host": os.environ.get("HOST",""),
+  "exe": os.environ.get("EXE",""),
+  "comm": os.environ.get("COMM",""),
+  "uid": os.environ.get("UID",""),
+  "euid": os.environ.get("EUID",""),
+  "auid": os.environ.get("AUID",""),
+  "pid": os.environ.get("PID",""),
+  "ppid": os.environ.get("PPID",""),
+  "tty": os.environ.get("TTY",""),
+  "key": os.environ.get("KEY",""),
+  "audit": os.environ.get("AUDIT",""),
+  "text": os.environ.get("TEXT",""),
+  "raw": os.environ.get("RAW",""),
+}
+print(json.dumps(data, separators=(",", ":")))
+PY
+}
 
 tail -Fn0 "$LOG" | while read -r line; do
   # Solo SYSCALL + execve (x86_64: syscall=59)
@@ -46,11 +79,7 @@ tail -Fn0 "$LOG" | while read -r line; do
     # “Texto” estilo humano (sin depender de ausearch)
     text="$(hostname) AUID=${auid:-?} UID=${uid:-?} EUID=${euid:-?} TTY=${tty:-?} ran ${exe} (comm=${comm:-?} pid=${pid:-?} ppid=${ppid:-?} key=${key:-red_exec} audit=${msg:-?})"
 
-    payload=$(
-      cat <<EOF
-{"alert":"RED_EXEC","host":"$(hostname)","exe":"$exe","comm":"${comm:-}","uid":"${uid:-}","euid":"${euid:-}","auid":"${auid:-}","pid":"${pid:-}","ppid":"${ppid:-}","tty":"${tty:-}","key":"${key:-}","audit":"${msg:-}","text":"$(printf '%s' "$text" | escape_json)","raw":"$(printf '%s' "$line" | escape_json)"}
-EOF
-    )
+    payload="$(make_payload "$exe" "${comm:-}" "${uid:-}" "${euid:-}" "${auid:-}" "${pid:-}" "${ppid:-}" "${tty:-}" "${key:-}" "${msg:-}" "$text" "$line")"
 
     curl -sS -m 2 -X POST "$WEBHOOK" \
       -H 'Content-Type: application/json' \

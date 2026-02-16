@@ -380,12 +380,6 @@ func severityFromCollector(a CollectorAlert) string {
 }
 
 func collectorTitle(a CollectorAlert) string {
-	when := time.Now()
-	if t, ok := parseAuditTime(a.Audit); ok {
-		when = t
-	}
-	whenStr := when.In(time.Local).Format("15:04:05 01/02/2006")
-
 	actor := strings.TrimSpace(a.AUID)
 	// Prefer human-readable AUID from raw if present (e.g., AUID="nala").
 	if v := extractQuotedKV(a.Raw, "AUID"); v != "" {
@@ -410,31 +404,7 @@ func collectorTitle(a CollectorAlert) string {
 		exe = "(unknown exe)"
 	}
 
-	return "At " + whenStr + " " + actor + acting + ", " + verb + " " + exe
-}
-
-func parseAuditTime(audit string) (time.Time, bool) {
-	s := strings.TrimSpace(audit)
-	if s == "" {
-		return time.Time{}, false
-	}
-	// Common format: "<unix>.<ms>:<seq>" e.g. "1771199537.139:6869"
-	cut := len(s)
-	if i := strings.IndexByte(s, '.'); i >= 0 && i < cut {
-		cut = i
-	}
-	if i := strings.IndexByte(s, ':'); i >= 0 && i < cut {
-		cut = i
-	}
-	secStr := s
-	if cut != len(s) {
-		secStr = s[:cut]
-	}
-	sec, err := strconv.ParseInt(secStr, 10, 64)
-	if err != nil {
-		return time.Time{}, false
-	}
-	return time.Unix(sec, 0), true
+	return actor + acting + ", " + verb + " " + exe
 }
 
 func extractQuotedKV(raw, key string) string {
