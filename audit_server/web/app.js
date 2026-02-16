@@ -34,12 +34,17 @@ function buildCard(a) {
   item.className = "alert-card";
   const rawText = a.raw ? JSON.stringify(a.raw, null, 2) : a.raw_text || "";
   const titleText = a.title || a.host || "Unknown host";
+  const srcIP = a.src_ip || a.src || "—";
+  let sourceIPText = srcIP;
+  if (a.host) {
+    sourceIPText = srcIP === "—" ? a.host : `${srcIP} (${a.host})`;
+  }
   item.dataset.id = a.id;
   item.innerHTML = `
     <div class="pill">${a.alert_type || a.search_name || "Splunk Alert"}</div>
     <div class="host">${titleText}</div>
     <div class="meta">
-      <div><span>Source IP</span><strong>${a.src_ip || a.src || "—"}</strong></div>
+      <div><span>Source IP</span><strong>${sourceIPText}</strong></div>
       <div><span>Source</span><strong>${a.source || "—"}</strong></div>
       <div><span>Received</span><strong>${formatDate(a.received_at)}</strong></div>
     </div>
