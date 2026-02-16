@@ -14,6 +14,12 @@ command -v python3 >/dev/null 2>&1 || {
 declare -A SEEN
 DEDUP_WINDOW=5   # seconds
 
+# Cache para correlacionar type=PATH con el msg=audit(epoch:serial) del SYSCALL.
+# Esto permite incluir (y dedupear) por target file/dir cuando exista.
+declare -A PATH_BY_MSG
+declare -A TS_BY_MSG
+PATH_TTL=30      # seconds
+
 # Keys de auditd que queremos reenviar al webhook aunque no sean execve=59.
 # Nota: filtramos a registros type=SYSCALL para evitar duplicados (PATH/CWD/PROCTITLE).
 KEY_ALERTS=(delete perm_change owner_change sshd_config module_load priv_esc)
@@ -54,6 +60,39 @@ dedupe_allow() {
   fi
   SEEN["$dedupe_key"]="$now"
   return 0
+}
+
+cache_path_line() {
+  local line="$1"
+  [[ "$line" == *"type=PATH"* ]] || return 0
+
+  local msg name now
+  msg=$(sed -n 's/.* msg=audit(\([^)]*\)).*/\1/p' <<<"$line")
+  [[ -n "${msg:-}" ]] || return 0
+
+  name=$(sed -n 's/.* name="\([^"]*\)".*/\1/p' <<<"$line")
+  [[ -n "${name:-}" ]] || return 0
+
+  now="$(date +%s)"
+  PATH_BY_MSG["$msg"]="$name"
+  TS_BY_MSG["$msg"]="$now"
+}
+
+lookup_path_for_msg() {
+  local msg="$1"
+  [[ -n "${msg:-}" ]] || return 0
+  printf '%s' "${PATH_BY_MSG[$msg]:-}"
+}
+
+cleanup_path_cache() {
+  local now k ts
+  now="$(date +%s)"
+  for k in "${!TS_BY_MSG[@]}"; do
+    ts="${TS_BY_MSG[$k]:-0}"
+    if (( now - ts > PATH_TTL )); then
+      unset "TS_BY_MSG[$k]" "PATH_BY_MSG[$k]"
+    fi
+  done
 }
 
 make_payload() {
@@ -100,6 +139,12 @@ send_payload() {
 process_line() {
   local line="$1"
 
+  # Aprender targets de type=PATH para enriquecer el alert del SYSCALL correlacionado.
+  if [[ "$line" == *"type=PATH"* ]]; then
+    cache_path_line "$line"
+    return 0
+  fi
+
   [[ "$line" == *"type=SYSCALL"* ]] || return 0
 
   # Extraer campos del raw (aplica para AUDIT_KEY y para RED_EXEC).
@@ -115,6 +160,12 @@ process_line() {
   key=$(sed -n 's/.* key="\([^"]*\)".*/\1/p' <<<"$line")
   msg=$(sed -n 's/.* msg=audit(\([^)]*\)).*/\1/p' <<<"$line")  # "epoch.serial"
 
+  # Limpiar cache vieja (barato: mapas chicos).
+  cleanup_path_cache
+
+  local target
+  target="$(lookup_path_for_msg "${msg:-}")"
+
   # Drop noisy owner_change events caused by sudo internals
   if [[ "${key:-}" == "owner_change" && "${exe:-}" == "/usr/bin/sudo" ]]; then
     return 0
@@ -124,8 +175,12 @@ process_line() {
   if [[ "$line" == *" success=yes"* ]] && is_key_alert "${key:-}"; then
     local text payload
     text="$HOST key=${key:-?} AUID=${auid:-?} UID=${uid:-?} EUID=${euid:-?} TTY=${tty:-?} exe=${exe:-?} comm=${comm:-?} pid=${pid:-?} audit=${msg:-?}"
+    if [[ -n "${target:-}" ]]; then
+      text="$text target=$target"
+    fi
     payload="$(make_payload "AUDIT_KEY" "${exe:-}" "${comm:-}" "${uid:-}" "${euid:-}" "${auid:-}" "${pid:-}" "${ppid:-}" "${tty:-}" "${key:-}" "${msg:-}" "$text" "$line")"
-    if dedupe_allow "${key:-}|${exe:-}|${comm:-}|${tty:-}"; then
+    # Dedupe: key|exe|comm|target (sin tty) para reducir spam por shells/pty distintos.
+    if dedupe_allow "${key:-}|${exe:-}|${comm:-}|${target:-}"; then
       send_payload "$payload"
     fi
   fi
