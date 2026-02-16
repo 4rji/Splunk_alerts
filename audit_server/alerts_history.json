@@ -1,0 +1,49 @@
+{
+  "alerts": [
+    {
+      "id": 1,
+      "received_at": "2026-02-15T23:52:17.432358082Z",
+      "host": "",
+      "source": "",
+      "src_ip": "192.168.88.108",
+      "search_name": "",
+      "alert_type": "unparsed",
+      "raw": null,
+      "raw_text": "{\"alert\":\"RED_EXEC\",\"host\":\"debian\",\"exe\":\"/tmp/x\",\"comm\":\"x\",\"uid\":\"0\",\"euid\":\"0\",\"auid\":\"1000\",\"pid\":\"345028\",\"ppid\":\"345024\",\"tty\":\"pts5\",\"key\":\"red_exec\",\"audit\":\"1771199537.139:6869\",\"text\":\"debian AUID=1000 UID=0 EUID=0 TTY=pts5 ran /tmp/x (comm=x pid=345028 ppid=345024 key=red_exec audit=1771199537.139:6869)\",\"raw\":\"type=SYSCALL msg=audit(1771199537.139:6869): arch=c000003e syscall=59 success=yes exit=0 a0=55f96dc92960 a1=55f96dc92980 a2=55f99e7bd638 a3=8 items=3 ppid=345024 pid=345028 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts5 ses=111 comm=\\\"x\\\" exe=\\\"/tmp/x\\\" subj=unconfined key=\\\"red_exec\\\"\u001dARCH=x86_64 SYSCALL=execve AUID=\\\"nala\\\" UID=\\\"root\\\" GID=\\\"root\\\" EUID=\\\"root\\\" SUID=\\\"root\\\" FSUID=\\\"root\\\" EGID=\\\"root\\\" SGID=\\\"root\\\" FSGID=\\\"root\\\"\"}"
+    },
+    {
+      "id": 2,
+      "received_at": "2026-02-15T23:59:00.48686277Z",
+      "host": "",
+      "source": "",
+      "src_ip": "192.168.88.108",
+      "search_name": "",
+      "alert_type": "unparsed",
+      "raw": null,
+      "raw_text": "{\"alert\":\"RED_EXEC\",\"host\":\"debian\",\"exe\":\"/tmp/x\",\"comm\":\"x\",\"uid\":\"0\",\"euid\":\"0\",\"auid\":\"1000\",\"pid\":\"345714\",\"ppid\":\"345710\",\"tty\":\"pts3\",\"key\":\"red_exec\",\"audit\":\"1771199940.252:7354\",\"text\":\"debian AUID=1000 UID=0 EUID=0 TTY=pts3 ran /tmp/x (comm=x pid=345714 ppid=345710 key=red_exec audit=1771199940.252:7354)\",\"raw\":\"type=SYSCALL msg=audit(1771199940.252:7354): arch=c000003e syscall=59 success=yes exit=0 a0=55d136567960 a1=55d136567980 a2=55d1714c1638 a3=8 items=3 ppid=345710 pid=345714 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts3 ses=111 comm=\\\"x\\\" exe=\\\"/tmp/x\\\" subj=unconfined key=\\\"red_exec\\\"\u001dARCH=x86_64 SYSCALL=execve AUID=\\\"nala\\\" UID=\\\"root\\\" GID=\\\"root\\\" EUID=\\\"root\\\" SUID=\\\"root\\\" FSUID=\\\"root\\\" EGID=\\\"root\\\" SGID=\\\"root\\\" FSGID=\\\"root\\\"\"}"
+    },
+    {
+      "id": 3,
+      "received_at": "2026-02-16T00:00:20.665505794Z",
+      "host": "",
+      "source": "",
+      "src_ip": "192.168.88.108",
+      "search_name": "",
+      "alert_type": "unparsed",
+      "raw": null,
+      "raw_text": "{\"alert\":\"RED_EXEC\",\"host\":\"debian\",\"exe\":\"/tmp/x\",\"comm\":\"x\",\"uid\":\"0\",\"euid\":\"0\",\"auid\":\"1000\",\"pid\":\"346260\",\"ppid\":\"346256\",\"tty\":\"pts3\",\"key\":\"red_exec\",\"audit\":\"1771200020.462:7531\",\"text\":\"debian AUID=1000 UID=0 EUID=0 TTY=pts3 ran /tmp/x (comm=x pid=346260 ppid=346256 key=red_exec audit=1771200020.462:7531)\",\"raw\":\"type=SYSCALL msg=audit(1771200020.462:7531): arch=c000003e syscall=59 success=yes exit=0 a0=56181ccd1960 a1=56181ccd1980 a2=56183bdae638 a3=8 items=3 ppid=346256 pid=346260 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts3 ses=111 comm=\\\"x\\\" exe=\\\"/tmp/x\\\" subj=unconfined key=\\\"red_exec\\\"\u001dARCH=x86_64 SYSCALL=execve AUID=\\\"nala\\\" UID=\\\"root\\\" GID=\\\"root\\\" EUID=\\\"root\\\" SUID=\\\"root\\\" FSUID=\\\"root\\\" EGID=\\\"root\\\" SGID=\\\"root\\\" FSGID=\\\"root\\\"\"}"
+    },
+    {
+      "id": 4,
+      "received_at": "2026-02-16T00:00:51.969734815Z",
+      "host": "",
+      "source": "",
+      "src_ip": "192.168.88.108",
+      "search_name": "",
+      "alert_type": "unparsed",
+      "raw": null,
+      "raw_text": "{\"alert\":\"RED_EXEC\",\"host\":\"debian\",\"exe\":\"/tmp/x\",\"comm\":\"x\",\"uid\":\"0\",\"euid\":\"0\",\"auid\":\"1000\",\"pid\":\"346351\",\"ppid\":\"346347\",\"tty\":\"pts3\",\"key\":\"red_exec\",\"audit\":\"1771200051.878:7568\",\"text\":\"debian AUID=1000 UID=0 EUID=0 TTY=pts3 ran /tmp/x (comm=x pid=346351 ppid=346347 key=red_exec audit=1771200051.878:7568)\",\"raw\":\"type=SYSCALL msg=audit(1771200051.878:7568): arch=c000003e syscall=59 success=yes exit=0 a0=55627e3bf960 a1=55627e3bf980 a2=5562ba1ac638 a3=8 items=3 ppid=346347 pid=346351 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts3 ses=111 comm=\\\"x\\\" exe=\\\"/tmp/x\\\" subj=unconfined key=\\\"red_exec\\\"\u001dARCH=x86_64 SYSCALL=execve AUID=\\\"nala\\\" UID=\\\"root\\\" GID=\\\"root\\\" EUID=\\\"root\\\" SUID=\\\"root\\\" FSUID=\\\"root\\\" EGID=\\\"root\\\" SGID=\\\"root\\\" FSGID=\\\"root\\\"\"}"
+    }
+  ],
+  "next_id": 5
+}

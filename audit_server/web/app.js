@@ -33,10 +33,11 @@ function buildCard(a) {
   const item = document.createElement("li");
   item.className = "alert-card";
   const rawText = a.raw ? JSON.stringify(a.raw, null, 2) : a.raw_text || "";
+  const titleText = a.title || a.host || "Unknown host";
   item.dataset.id = a.id;
   item.innerHTML = `
     <div class="pill">${a.alert_type || a.search_name || "Splunk Alert"}</div>
-    <div class="host">${a.host || "Unknown host"}</div>
+    <div class="host">${titleText}</div>
     <div class="meta">
       <div><span>Source IP</span><strong>${a.src_ip || a.src || "—"}</strong></div>
       <div><span>Source</span><strong>${a.source || "—"}</strong></div>

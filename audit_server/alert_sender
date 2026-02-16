@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+WEBHOOK="http://10.0.4.220:5123/webhook"
+LOG="/var/log/audit/audit.log"
+
+# Rutas "normales" (permitidas)
+ALLOW_PREFIX=(/usr/bin/ /bin/ /usr/sbin/ /sbin/ /usr/local/bin/ /usr/local/sbin/)
+# Rutas típicas de dropper / staging (rojas)
+BAD_PREFIX=(/tmp/ /var/tmp/ /dev/shm/ /home/ /root/ /opt/ /srv/)
+
+is_allowed() {
+  local exe="$1"
+  for p in "${ALLOW_PREFIX[@]}"; do [[ "$exe" == "$p"* ]] && return 0; done
+  return 1
+}
+is_bad() {
+  local exe="$1"
+  for p in "${BAD_PREFIX[@]}"; do [[ "$exe" == "$p"* ]] && return 0; done
+  return 1
+}
+
+escape_json() { sed 's/\\/\\\\/g; s/"/\\"/g'; }
+
+tail -Fn0 "$LOG" | while read -r line; do
+  # Solo SYSCALL + execve (x86_64: syscall=59)
+  [[ "$line" == *"type=SYSCALL"* ]] || continue
+  [[ "$line" == *"syscall=59"* ]] || continue
+  [[ "$line" == *" success=yes"* ]] || continue
+
+  # Extraer campos del raw
+  exe=$(sed -n 's/.* exe="\([^"]*\)".*/\1/p' <<<"$line"); [[ -n "${exe:-}" ]] || continue
+  comm=$(sed -n 's/.* comm="\([^"]*\)".*/\1/p' <<<"$line")
+  uid=$(sed -n 's/.* uid=\([0-9]\+\).*/\1/p' <<<"$line")
+  euid=$(sed -n 's/.* euid=\([0-9]\+\).*/\1/p' <<<"$line")
+  auid=$(sed -n 's/.* auid=\([0-9]\+\).*/\1/p' <<<"$line")
+  pid=$(sed -n 's/.* pid=\([0-9]\+\).*/\1/p' <<<"$line")
+  ppid=$(sed -n 's/.* ppid=\([0-9]\+\).*/\1/p' <<<"$line")
+  tty=$(sed -n 's/.* tty=\([^ ]*\).*/\1/p' <<<"$line")
+  key=$(sed -n 's/.* key="\([^"]*\)".*/\1/p' <<<"$line")
+  msg=$(sed -n 's/.* msg=audit(\([^)]*\)).*/\1/p' <<<"$line")  # "epoch.serial"
+
+  # Señal roja: root + (ruta mala o no permitida)
+  [[ "${euid:-}" == "0" || "${uid:-}" == "0" ]] || continue
+  if is_bad "$exe" || ! is_allowed "$exe"; then
+    # “Texto” estilo humano (sin depender de ausearch)
+    text="$(hostname) AUID=${auid:-?} UID=${uid:-?} EUID=${euid:-?} TTY=${tty:-?} ran ${exe} (comm=${comm:-?} pid=${pid:-?} ppid=${ppid:-?} key=${key:-red_exec} audit=${msg:-?})"
+
+    payload=$(
+      cat <<EOF
+{"alert":"RED_EXEC","host":"$(hostname)","exe":"$exe","comm":"${comm:-}","uid":"${uid:-}","euid":"${euid:-}","auid":"${auid:-}","pid":"${pid:-}","ppid":"${ppid:-}","tty":"${tty:-}","key":"${key:-}","audit":"${msg:-}","text":"$(printf '%s' "$text" | escape_json)","raw":"$(printf '%s' "$line" | escape_json)"}
+EOF
+    )
+
+    curl -sS -m 2 -X POST "$WEBHOOK" \
+      -H 'Content-Type: application/json' \
+      -d "$payload" >/dev/null || true
+  fi
+done

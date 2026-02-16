@@ -22,6 +22,7 @@ import (
 type Alert struct {
 	ID         int       `json:"id"`
 	ReceivedAt time.Time `json:"received_at"`
+	Title      string    `json:"title,omitempty"`
 	Host       string    `json:"host"`
 	Source     string    `json:"source"`
 	SrcIP      string    `json:"src_ip"`
@@ -207,6 +208,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		sev := severityFromCollector(a)
 		alert = Alert{
 			ReceivedAt: time.Now().UTC(),
+			Title:      collectorTitle(a),
 			Host:       a.Host,
 			AlertType:  a.Alert,
 			Severity:   sev,
@@ -375,6 +377,82 @@ func severityFromCollector(a CollectorAlert) string {
 	}
 
 	return "LOW"
+}
+
+func collectorTitle(a CollectorAlert) string {
+	when := time.Now()
+	if t, ok := parseAuditTime(a.Audit); ok {
+		when = t
+	}
+	whenStr := when.In(time.Local).Format("15:04:05 01/02/2006")
+
+	actor := strings.TrimSpace(a.AUID)
+	// Prefer human-readable AUID from raw if present (e.g., AUID="nala").
+	if v := extractQuotedKV(a.Raw, "AUID"); v != "" {
+		actor = v
+	}
+	if actor == "" {
+		actor = "unknown user"
+	}
+
+	acting := ""
+	if strings.TrimSpace(a.EUID) == "0" {
+		acting = ", acting as root"
+	}
+
+	verb := "executed"
+	if strings.Contains(a.Raw, "success=yes") {
+		verb = "successfully executed"
+	}
+
+	exe := strings.TrimSpace(a.Exe)
+	if exe == "" {
+		exe = "(unknown exe)"
+	}
+
+	return "At " + whenStr + " " + actor + acting + ", " + verb + " " + exe
+}
+
+func parseAuditTime(audit string) (time.Time, bool) {
+	s := strings.TrimSpace(audit)
+	if s == "" {
+		return time.Time{}, false
+	}
+	// Common format: "<unix>.<ms>:<seq>" e.g. "1771199537.139:6869"
+	cut := len(s)
+	if i := strings.IndexByte(s, '.'); i >= 0 && i < cut {
+		cut = i
+	}
+	if i := strings.IndexByte(s, ':'); i >= 0 && i < cut {
+		cut = i
+	}
+	secStr := s
+	if cut != len(s) {
+		secStr = s[:cut]
+	}
+	sec, err := strconv.ParseInt(secStr, 10, 64)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return time.Unix(sec, 0), true
+}
+
+func extractQuotedKV(raw, key string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || key == "" {
+		return ""
+	}
+	pat := key + "=\""
+	i := strings.Index(raw, pat)
+	if i < 0 {
+		return ""
+	}
+	start := i + len(pat)
+	j := strings.IndexByte(raw[start:], '"')
+	if j < 0 {
+		return ""
+	}
+	return raw[start : start+j]
 }
 
 func getAlertsText(w http.ResponseWriter, r *http.Request) {
