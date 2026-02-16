@@ -158,6 +158,8 @@ Once your alerts are configured and triggering, you should see them appear in re
 
 # Audit Server (audit_server)
 
+![Auditd Alerts UI](auditd.webp)
+
 This section is copied from `audit_server/README.md`.
 
 ### Auditd Alerts (Webhook Receiver + Web UI)
