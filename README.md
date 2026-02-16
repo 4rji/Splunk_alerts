@@ -156,9 +156,9 @@ Once your alerts are configured and triggering, you should see them appear in re
 
 ---
 
-## Audit Server (audit_server)
+# Audit Server (audit_server)
 
-Content from `audit_server/README.md`:
+This section is copied from `audit_server/README.md`.
 
 ### Auditd Alerts (Webhook Receiver + Web UI)
 
@@ -168,6 +168,8 @@ It supports two common inputs:
 
 - Collector/auditd sender format (see `alert_sender`): the UI shows a human title like `nala, acting as root, successfully executed /tmp/x`.
 - Generic Splunk-style webhook payloads: stored and displayed as-is.
+
+---
 
 ### Components
 
@@ -182,6 +184,8 @@ It supports two common inputs:
 - `alert_sender`: tail-based auditd log watcher that sends RED_EXEC alerts to `/webhook`.
 - `alerts_history.json`: local on-disk rolling history.
 - `website.py`: old/alternate Flask demo webhook viewer (not used by the Go server).
+
+---
 
 ### Quick Start (Go Server)
 
@@ -211,6 +215,8 @@ Default port is `5123`. Override with:
 ```bash
 PORT=8080 go run .
 ```
+
+---
 
 ### Using `alert_sender` (Auditd -> Webhook)
 
@@ -246,6 +252,8 @@ This script needs access to `/var/log/audit/audit.log` (usually root) and requir
 ```bash
 sudo bash ./alert_sender
 ```
+
+---
 
 ### Notes / Troubleshooting
 
