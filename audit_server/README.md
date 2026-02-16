@@ -17,7 +17,7 @@ It supports two common inputs:
   - `POST /api/history/reload` reloads `alerts_history.json`
   - `POST /api/history/rotate` rotates history to a new file and clears memory
 - `web/`: static UI served by the Go binary (embedded).
-- `alert_sender`: tail-based auditd log watcher that sends RED_EXEC alerts to `/webhook`.
+- `alert_sender`: tail-based auditd log watcher that sends `RED_EXEC` + key-based `AUDIT_KEY` alerts to `/webhook`.
 - `alerts_history.json`: local on-disk rolling history.
 - `website.py`: old/alternate Flask demo webhook viewer (not used by the Go server).
 
@@ -52,7 +52,10 @@ PORT=8080 go run .
 
 ## Using `alert_sender` (Auditd -> Webhook)
 
-`alert_sender` watches `/var/log/audit/audit.log` for successful `execve` syscalls run as root and sends a JSON alert to the Go server.
+`alert_sender` watches `/var/log/audit/audit.log` and sends:
+
+- `RED_EXEC`: successful root `execve` from suspicious paths (or paths not in the allowed prefixes)
+- `AUDIT_KEY`: successful `type=SYSCALL` events tagged with specific audit rule keys (`delete`, `perm_change`, `owner_change`, `sshd_config`, `module_load`, `priv_esc`)
 
 ### 1) Set the receiver IP
 
@@ -77,16 +80,17 @@ An alert is sent when:
 - `uid==0` or `euid==0`, and
 - the `exe` is in a bad prefix OR not in an allowed prefix
 
+Additionally, `AUDIT_KEY` is sent for `type=SYSCALL` + `success=yes` events whose `key="..."` matches `KEY_ALERTS` in `alert_sender`.
+
 ### 3) Run it
 
 This script needs access to `/var/log/audit/audit.log` (usually root) and requires `python3` for safe JSON encoding.
 
 ```bash
-sudo bash ./alert_sender
+sudo ./alert_sender
 ```
 
 ## Notes / Troubleshooting
 
 - If you see alerts show up as `unparsed`, it means the receiver could not parse the incoming body as JSON. With the current `alert_sender` this should not happen (it uses Python JSON encoding to escape control characters found in audit logs).
 - The UI uses the `title` field when present; otherwise it falls back to `host`.
-

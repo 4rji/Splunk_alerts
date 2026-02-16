@@ -357,6 +357,19 @@ func tryDecodeCollector(rawBody []byte) (CollectorAlert, bool, error) {
 }
 
 func severityFromCollector(a CollectorAlert) string {
+	// Key-based alerts come from explicit audit rules and tend to be higher-signal
+	// than path-based "red exec" heuristics.
+	if strings.TrimSpace(a.Alert) == "AUDIT_KEY" {
+		switch strings.TrimSpace(a.Key) {
+		case "sshd_config", "module_load", "priv_esc":
+			return "HIGH"
+		case "delete", "perm_change", "owner_change":
+			return "MED"
+		default:
+			return "MED"
+		}
+	}
+
 	exe := strings.TrimSpace(a.Exe)
 	euid := strings.TrimSpace(a.EUID)
 
@@ -392,6 +405,18 @@ func collectorTitle(a CollectorAlert) string {
 	acting := ""
 	if strings.TrimSpace(a.EUID) == "0" {
 		acting = ", acting as root"
+	}
+
+	if strings.TrimSpace(a.Alert) == "AUDIT_KEY" {
+		k := strings.TrimSpace(a.Key)
+		if k == "" {
+			k = "(unknown key)"
+		}
+		exe := strings.TrimSpace(a.Exe)
+		if exe == "" {
+			exe = "(unknown exe)"
+		}
+		return actor + acting + ", triggered audit key " + k + " via " + exe
 	}
 
 	verb := "executed"
