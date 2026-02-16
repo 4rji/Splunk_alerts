@@ -154,9 +154,13 @@ Once your alerts are configured and triggering, you should see them appear in re
 
 ![Alert Received on Dashboard](result.webp)
 
+
+---
+---
 ---
 
-# Audit Server (audit_server)
+
+# Audit Server    ***** (auditd_server) ***** 
 
 ![Auditd Alerts UI](auditd.webp)
 
